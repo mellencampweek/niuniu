@@ -1,0 +1,37 @@
+name: niuniu_trainer
+description: A Niu Niu card game trainer.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # ✅ 关键修改1：降级回 1.14.0，完美适配你的 Flutter 3.16.9
+  flame: ^1.14.0
+  
+  # ✅ 关键修改2：保持 5.2.1，适配你的 Dart SDK
+  audioplayers: ^5.2.1
+  
+  # 震动
+  vibration: ^1.9.0
+  
+  # 本地存储
+  shared_preferences: ^2.2.2
+  
+  # 谷歌字体
+  google_fonts: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/audio/
