@@ -13,7 +13,6 @@ class GameConfig {
   static int gameDuration = 30;
   static bool practiceAutoReveal = false;
 
-  // ⚠️ 确认文件名：请确保你的 assets/audio/ 下面真的是这个名字
   static const String _bgmFile = 'jazz.mp3';
 
   // --- 2. 历史记录 ---
@@ -40,7 +39,28 @@ class GameConfig {
     bestTimeTiming = prefs.getInt('bestTimeTiming') ?? 999;
     totalCorrectInfinite = prefs.getInt('totalCorrectInfinite') ?? 0;
 
+    // --- 音频兼容性配置 ---
+    try {
+      // 尝试设置音频上下文（兼容旧版本写法）
+      await AudioPlayer.global.setAudioContext(AudioContext(
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.ambient,
+        ),
+        android: AudioContextAndroid(
+          isSpeakerphoneOn: true,
+          stayAwake: true,
+          contentType: AndroidContentType.sonification,
+          usageType: AndroidUsageType.game,
+          audioFocus: AndroidAudioFocus.none,
+        ),
+      ));
+    } catch (e) {
+      // 如果版本不支持，忽略错误
+      print("Audio Context Warning: $e");
+    }
+
     await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
+    await _sfxPlayer.setPlayerMode(PlayerMode.lowLatency);
   }
 
   // --- 4. 保存设置 ---
@@ -55,52 +75,37 @@ class GameConfig {
     _bgmPlayer.setVolume(bgmVolume);
   }
 
-  // --- 5. 音频控制 (带调试打印版) ---
+  // --- 5. 音频控制 ---
 
-  // 播放背景音乐
   static Future<void> playBGM() async {
-    print("🕵️‍♂️ [调试] 准备播放背景音乐...");
-    print("🕵️‍♂️ [调试] 当前音量设置: $bgmVolume");
-    print("🕵️‍♂️ [调试] 目标文件: assets/audio/$_bgmFile");
-
     if (bgmVolume <= 0.05) {
-      print("❌ [调试] 音量太小 (<= 0.05)，停止播放");
       _bgmPlayer.stop();
       return;
     }
 
     try {
       if (_bgmPlayer.state != PlayerState.playing) {
-        // 注意：AssetSource 会自动补全 "assets/"，所以这里只写 "audio/..."
         await _bgmPlayer.play(AssetSource('audio/$_bgmFile'),
             volume: bgmVolume);
-        print("✅ [调试] 播放指令已发送！如果没有声音，请检查 pubspec.yaml 或清理缓存");
-      } else {
-        print("⚠️ [调试] 已经在播放中，跳过");
       }
     } catch (e) {
-      print("💥 [调试] 播放报错: $e");
+      // ignore
     }
   }
 
   static void stopBGM() {
-    print("🛑 [调试] 停止背景音乐");
     _bgmPlayer.stop();
   }
 
-  // 播放音效
   static Future<void> playSFX(String fileName) async {
     if (sfxVolume <= 0.05) return;
     try {
-      print("🔊 [调试] 播放音效: assets/audio/$fileName");
-      await _sfxPlayer.stop();
       await _sfxPlayer.play(AssetSource('audio/$fileName'), volume: sfxVolume);
-    } catch (e) {
-      print("💥 [调试] 音效报错: $e");
-    }
+    } catch (e) {}
   }
 
-  // ... (其他方法保持不变)
+  // --- 6. 数据逻辑 ---
+
   static Future<void> saveScore({int? score, int? time}) async {
     final prefs = await SharedPreferences.getInstance();
     if (score != null && time == null) {
